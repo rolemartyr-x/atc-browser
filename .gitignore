@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 build/
+coverage/
 
 # Brainstorming session state (per-user, ephemeral)
 .superpowers/
