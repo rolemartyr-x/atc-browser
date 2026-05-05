@@ -67,3 +67,28 @@ describe("World — basics", () => {
     expect(seen).toContain("command_rejected");
   });
 });
+
+describe("World — traffic", () => {
+  it("spawns aircraft using the configured TrafficGenerator", () => {
+    const w = new World(KDLH, { now_ms: 0 });
+    w.startTraffic({
+      initialIntervalSec: 30,
+      minIntervalSec: 30,
+      rampDurationSec: 600,
+      rng: () => 0,
+      idGen: () => "spawn-1",
+    });
+    const seen: string[] = [];
+    w.events.on((e) => { if (e.kind === "aircraft_spawned") seen.push(e.aircraft_id); });
+
+    w.tick(30);
+    expect(w.aircraft).toHaveLength(1);
+    expect(seen).toEqual(["spawn-1"]);
+  });
+
+  it("does not spawn when traffic is not started", () => {
+    const w = new World(KDLH, { now_ms: 0 });
+    w.tick(60);
+    expect(w.aircraft).toHaveLength(0);
+  });
+});
