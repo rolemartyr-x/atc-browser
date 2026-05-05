@@ -1,4 +1,4 @@
-import type { Point2D } from "./types.ts";
+import type { Point2D } from "./types";
 
 export function normalizeHeading(deg: number): number {
   return ((deg % 360) + 360) % 360;

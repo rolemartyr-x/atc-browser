@@ -6,7 +6,7 @@ import {
   distanceNm,
   bearingDeg,
   headingDelta,
-} from "../../src/sim/math.ts";
+} from "../../src/sim/math";
 
 describe("normalizeHeading", () => {
   it("wraps positive overflow", () => {

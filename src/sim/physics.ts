@@ -1,5 +1,5 @@
-import { headingDelta, normalizeHeading, degToRad } from "./math.ts";
-import type { Aircraft, Point2D } from "./types.ts";
+import { headingDelta, normalizeHeading, degToRad } from "./math";
+import type { Aircraft, Point2D } from "./types";
 
 export const TURN_RATE_DEG_PER_SEC = 3;
 

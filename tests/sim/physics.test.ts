@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { integrateHeading, TURN_RATE_DEG_PER_SEC } from "../../src/sim/physics.ts";
+import { integrateHeading, TURN_RATE_DEG_PER_SEC } from "../../src/sim/physics";
 
 describe("integrateHeading", () => {
   it("turns right toward target at 3°/sec", () => {
@@ -31,7 +31,7 @@ import {
   integrateSpeed,
   VERTICAL_RATE_FPS,
   ACCEL_KTS_PER_SEC,
-} from "../../src/sim/physics.ts";
+} from "../../src/sim/physics";
 
 describe("integrateAltitude", () => {
   it("descends at the configured rate", () => {
@@ -62,8 +62,8 @@ describe("integrateSpeed", () => {
   });
 });
 
-import { integratePosition, tickAircraft } from "../../src/sim/physics.ts";
-import type { Aircraft } from "../../src/sim/types.ts";
+import { integratePosition, tickAircraft } from "../../src/sim/physics";
+import type { Aircraft } from "../../src/sim/types";
 
 describe("integratePosition", () => {
   it("flies due north at the right rate", () => {
