@@ -7,7 +7,27 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <header id="hud-top">
+        <div id="hud-clock">00:00</div>
+        <div id="hud-selected">--</div>
+        <div id="hud-stats">
+          <span><span class="hud-label">SCORE</span> <span id="hud-score">0</span></span>
+          <span><span class="hud-label">CONFLICTS</span> <span id="hud-conflicts">0</span></span>
+          <span><span class="hud-label">STATUS</span> <span id="hud-status">running</span></span>
+        </div>
+      </header>
+      <canvas id="scope"></canvas>
+      <aside id="strips"></aside>
+      <footer id="hud-bottom">
+        <div id="hud-response"></div>
+        <div id="hud-cmdline">
+          <span class="prompt">CMD&gt;</span>
+          <input id="cmd-input" type="text" autocomplete="off" spellcheck="false" autofocus />
+        </div>
+      </footer>
+      <div id="click-menu" hidden></div>
+    </div>
     <script type="module" src="/src/app/main.ts"></script>
   </body>
 </html>
