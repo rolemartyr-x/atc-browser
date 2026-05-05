@@ -1,5 +1,5 @@
 import type { World } from "../sim/World";
-import type { Airspace, Runway } from "../sim/types";
+import type { Airspace, Runway, Aircraft } from "../sim/types";
 import { degToRad } from "../sim/math";
 import { COLORS, FONTS, LINES } from "./theme";
 import type { Projection } from "./projection";
@@ -14,7 +14,7 @@ export class Scope {
   ) {}
 
   // Re-renders the entire scope from scratch every frame.
-  render(world: World, _selectedId: string | null): void {
+  render(world: World, selectedId: string | null): void {
     const ctx = this.canvas.getContext("2d");
     if (!ctx) return;
     this.syncCanvasSize(ctx);
@@ -23,7 +23,7 @@ export class Scope {
     this.drawRangeRings(ctx, world.airspace);
     this.drawRunways(ctx, world.airspace);
     this.drawFixes(ctx, world.airspace);
-    // Aircraft + conflicts rendered in subsequent tasks (5-7).
+    this.drawAircraft(ctx, world.aircraft, selectedId);
   }
 
   private syncCanvasSize(ctx: CanvasRenderingContext2D): void {
@@ -128,6 +128,44 @@ export class Scope {
       ctx.closePath();
       ctx.stroke();
       ctx.fillText(fix.name, p.x + 7, p.y + 4);
+    }
+  }
+
+  private drawAircraft(
+    ctx: CanvasRenderingContext2D,
+    aircraft: Aircraft[],
+    selectedId: string | null,
+  ): void {
+    ctx.font = FONTS.scope;
+    for (const ac of aircraft) {
+      const p = this.projection.toScreen(ac.position_nm);
+      const isSelected = ac.id === selectedId;
+      const isCleared = ac.state === "cleared_approach";
+      const color = isSelected || isCleared ? COLORS.scopeBright : COLORS.scope;
+
+      // Blip: 4x4 px square, centered on the position.
+      ctx.fillStyle = color;
+      ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+
+      // Datablock: callsign on line 1; "<altitude_hundreds> <speed>" on line 2.
+      const altHundreds = Math.round(ac.altitude_ft / 100).toString().padStart(3, "0");
+      const speed = Math.round(ac.speed_kts).toString();
+      const line1 = `${isCleared ? "*" : ""}${ac.callsign}`;
+      const line2 = `${altHundreds} ${speed}`;
+
+      ctx.fillStyle = color;
+      const dx = 8;
+      const dy = -4;
+      ctx.fillText(line1, p.x + dx, p.y + dy);
+      ctx.fillText(line2, p.x + dx, p.y + dy + 12);
+
+      // Leader line from blip toward the datablock.
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(p.x + 2, p.y);
+      ctx.lineTo(p.x + dx - 1, p.y + dy - 4);
+      ctx.stroke();
     }
   }
 }
