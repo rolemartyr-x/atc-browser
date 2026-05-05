@@ -4,7 +4,7 @@ Things to do *after* Plan 1, Plan 2, Plan 3 ship the MVP. Add new entries at the
 
 ## Polish (small, drop-in any time)
 
-- **Click menu verb labels with hotkey hints.** Show "Heading (h)" / "Altitude (a)" / "Speed (s)" / "Cleared ILS (l)" / "Handoff (x)" instead of bare verb letters. ~5 minute change to `src/input/clickMenu.ts` `VERBS` array and the button text.
+(empty)
 
 ## Features (post-MVP, need brainstorming)
 
