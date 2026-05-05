@@ -47,15 +47,14 @@ export class CommandPipeline {
 
   private handleEvent(e: { kind: string }): void {
     if (e.kind === "command_accepted") {
-      const cmd = (e as { command: Parameters<typeof describeCommand>[0]; aircraft_id: string }).command;
-      const id = (e as { aircraft_id: string }).aircraft_id;
-      const cs = this.callsignFor(id);
-      this.setResponse(`${cs}, ${describeCommand(cmd)}`, false);
+      const ev = e as unknown as { command: Parameters<typeof describeCommand>[0]; aircraft_id: string };
+      const cs = this.callsignFor(ev.aircraft_id);
+      this.setResponse(`${cs}, ${describeCommand(ev.command)}`, false);
     } else if (e.kind === "command_rejected") {
-      const reason = (e as { reason: string }).reason;
+      const reason = (e as unknown as { reason: string }).reason;
       this.setResponse(reason, true);
     } else if (e.kind === "session_ended") {
-      const reason = (e as { reason: string }).reason;
+      const reason = (e as unknown as { reason: string }).reason;
       this.setResponse(`Session ended: ${reason}`, true);
     }
   }
