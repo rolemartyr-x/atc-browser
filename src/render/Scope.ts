@@ -1,20 +1,25 @@
 import type { World } from "../sim/World";
-import type { Airspace, Runway } from "../sim/types";
+import type { Airspace, Runway, Aircraft, Point2D } from "../sim/types";
 import { degToRad } from "../sim/math";
+import { findConflicts } from "../sim/conflicts";
 import { COLORS, FONTS, LINES } from "./theme";
 import type { Projection } from "./projection";
 
 const RANGE_RING_INTERVAL_NM = 10;
 const ILS_CENTERLINE_LENGTH_NM = 12;
+const TRAIL_SAMPLE_INTERVAL_S = 1;
+const TRAIL_MAX_AGE_S = 30;
 
 export class Scope {
+  private trails = new Map<string, Array<{ pos: Point2D; t: number }>>();
+
   constructor(
     private canvas: HTMLCanvasElement,
     private projection: Projection,
   ) {}
 
   // Re-renders the entire scope from scratch every frame.
-  render(world: World, _selectedId: string | null): void {
+  render(world: World, selectedId: string | null): void {
     const ctx = this.canvas.getContext("2d");
     if (!ctx) return;
     this.syncCanvasSize(ctx);
@@ -23,7 +28,10 @@ export class Scope {
     this.drawRangeRings(ctx, world.airspace);
     this.drawRunways(ctx, world.airspace);
     this.drawFixes(ctx, world.airspace);
-    // Aircraft + conflicts rendered in subsequent tasks (5-7).
+    this.updateTrails(world.elapsed_sec, world.aircraft);
+    this.drawTrails(ctx);
+    this.drawAircraft(ctx, world.aircraft, selectedId);
+    this.drawConflicts(ctx, world.aircraft);
   }
 
   private syncCanvasSize(ctx: CanvasRenderingContext2D): void {
@@ -128,6 +136,134 @@ export class Scope {
       ctx.closePath();
       ctx.stroke();
       ctx.fillText(fix.name, p.x + 7, p.y + 4);
+    }
+  }
+
+  private updateTrails(elapsedSec: number, aircraft: Aircraft[]): void {
+    const liveIds = new Set<string>();
+    for (const ac of aircraft) {
+      liveIds.add(ac.id);
+      let trail = this.trails.get(ac.id);
+      if (!trail) {
+        trail = [];
+        this.trails.set(ac.id, trail);
+      }
+      const last = trail[trail.length - 1];
+      if (!last || elapsedSec - last.t >= TRAIL_SAMPLE_INTERVAL_S) {
+        trail.push({ pos: { ...ac.position_nm }, t: elapsedSec });
+      }
+      while (trail.length > 0 && elapsedSec - trail[0]!.t > TRAIL_MAX_AGE_S) {
+        trail.shift();
+      }
+    }
+    // Drop trails for aircraft no longer present.
+    for (const id of [...this.trails.keys()]) {
+      if (!liveIds.has(id)) this.trails.delete(id);
+    }
+  }
+
+  private drawTrails(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = COLORS.scope;
+    for (const trail of this.trails.values()) {
+      // Newest sample is at the end; oldest at the start.
+      const n = trail.length;
+      for (let i = 0; i < n; i++) {
+        const { pos } = trail[i]!;
+        const age = (n - 1 - i) / Math.max(1, n - 1);   // 0 = newest, 1 = oldest
+        const alpha = 1 - age;
+        ctx.globalAlpha = Math.max(0.05, alpha * 0.6);
+        const sp = this.projection.toScreen(pos);
+        ctx.fillRect(sp.x - 0.5, sp.y - 0.5, 1, 1);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  private drawAircraft(
+    ctx: CanvasRenderingContext2D,
+    aircraft: Aircraft[],
+    selectedId: string | null,
+  ): void {
+    ctx.font = FONTS.scope;
+    for (const ac of aircraft) {
+      const p = this.projection.toScreen(ac.position_nm);
+      const isSelected = ac.id === selectedId;
+      const isCleared = ac.state === "cleared_approach";
+      const color = isSelected || isCleared ? COLORS.scopeBright : COLORS.scope;
+
+      // Selection halo
+      if (isSelected) {
+        ctx.strokeStyle = COLORS.scopeBright;
+        ctx.lineWidth = LINES.selectionHalo;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Blip
+      ctx.fillStyle = color;
+      ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+
+      // Target-heading vector when selected
+      if (isSelected && ac.target_heading != null) {
+        ctx.save();
+        ctx.strokeStyle = COLORS.scopeBright;
+        ctx.lineWidth = LINES.targetVector;
+        ctx.setLineDash([3, 2]);
+        const rad = degToRad(ac.target_heading);
+        const dx = Math.sin(rad);
+        const dy = -Math.cos(rad);   // y flipped: north = -y on screen
+        const len = 40;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + dx * len, p.y + dy * len);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Datablock
+      const altHundreds = Math.round(ac.altitude_ft / 100).toString().padStart(3, "0");
+      const speed = Math.round(ac.speed_kts).toString();
+      const line1 = `${isCleared ? "*" : ""}${ac.callsign}`;
+      const line2 = `${altHundreds} ${speed}`;
+
+      ctx.fillStyle = color;
+      const dx = 8;
+      const dy = -4;
+      ctx.fillText(line1, p.x + dx, p.y + dy);
+      ctx.fillText(line2, p.x + dx, p.y + dy + 12);
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(p.x + 2, p.y);
+      ctx.lineTo(p.x + dx - 1, p.y + dy - 4);
+      ctx.stroke();
+    }
+  }
+
+  private drawConflicts(ctx: CanvasRenderingContext2D, aircraft: Aircraft[]): void {
+    const pairs = findConflicts(aircraft);
+    if (pairs.length === 0) return;
+    const byId = new Map<string, Aircraft>();
+    for (const ac of aircraft) byId.set(ac.id, ac);
+
+    // Flash on/off at 2 Hz based on render time.
+    const flash = Math.floor(performance.now() / 250) % 2 === 0;
+    if (!flash) return;
+
+    ctx.strokeStyle = COLORS.conflict;
+    ctx.lineWidth = LINES.conflict;
+    for (const [a, b] of pairs) {
+      const acA = byId.get(a);
+      const acB = byId.get(b);
+      if (!acA || !acB) continue;
+      const pA = this.projection.toScreen(acA.position_nm);
+      const pB = this.projection.toScreen(acB.position_nm);
+      ctx.beginPath();
+      ctx.moveTo(pA.x, pA.y);
+      ctx.lineTo(pB.x, pB.y);
+      ctx.stroke();
     }
   }
 }
