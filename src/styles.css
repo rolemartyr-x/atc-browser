@@ -168,3 +168,106 @@ body {
   background: rgba(74, 222, 128, 0.2);
   color: var(--scope-bright);
 }
+
+#settings-toggle {
+  background: transparent;
+  border: 1px solid var(--scope-dim);
+  color: var(--scope);
+  padding: 2px 8px;
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#settings-toggle:hover {
+  color: var(--scope-bright);
+  border-color: var(--scope);
+}
+
+#settings-modal,
+#game-over {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+#settings-modal[hidden],
+#game-over[hidden] {
+  display: none;
+}
+
+.modal-card {
+  background: #000;
+  border: 1px solid var(--scope);
+  padding: 24px 32px;
+  min-width: 360px;
+  max-width: 480px;
+  box-shadow: 0 0 24px rgba(74, 222, 128, 0.25);
+}
+
+.modal-card h2 {
+  margin: 0 0 16px;
+  color: var(--scope-bright);
+  font-size: 18px;
+  font-weight: normal;
+  letter-spacing: 0.1em;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.setting-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--scope);
+}
+
+.setting-row input[type="checkbox"] {
+  accent-color: var(--scope);
+}
+
+.setting-row select {
+  flex: 1;
+  background: #000;
+  color: var(--scope);
+  border: 1px solid var(--scope-dim);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 4px;
+}
+
+.volume-display {
+  min-width: 36px;
+  text-align: right;
+  color: var(--scope-bright);
+}
+
+.modal-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-actions button {
+  background: transparent;
+  border: 1px solid var(--scope);
+  color: var(--scope-bright);
+  padding: 6px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.modal-actions button:hover {
+  background: rgba(74, 222, 128, 0.15);
+}
