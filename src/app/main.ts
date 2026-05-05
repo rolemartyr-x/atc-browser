@@ -10,6 +10,9 @@ import { CommandLineController, HotkeyHandler } from "../input/keyboard";
 import { MouseInput } from "../input/mouse";
 import { ClickMenu } from "../input/clickMenu";
 import { CommandPipeline } from "../input/commandPipeline";
+import { LocalStorageAdapter } from "../storage/Storage";
+import { SettingsStore } from "./settings";
+import { SettingsModal } from "../render/SettingsModal";
 
 function getElement<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -35,7 +38,8 @@ world.startTraffic({
   rampDurationSec: 600,
 });
 
-const appState = createAppState();
+const settingsStore = new SettingsStore(new LocalStorageAdapter());
+const appState = createAppState(settingsStore);
 // Add ~15% margin around the sector boundary so the scope doesn't fill the
 // canvas edge-to-edge. Aircraft outside the sector still render (briefly,
 // before they exit and the session ends).
@@ -92,6 +96,23 @@ new MouseInput({
   },
 });
 
+const settingsModal = new SettingsModal({
+  toggle: getElement<HTMLButtonElement>("settings-toggle"),
+  root: getElement("settings-modal"),
+  sfx: getElement<HTMLInputElement>("setting-sfx"),
+  tts: getElement<HTMLInputElement>("setting-tts"),
+  volume: getElement<HTMLInputElement>("setting-volume"),
+  volumeDisplay: getElement("setting-volume-display"),
+  voice: getElement<HTMLSelectElement>("setting-voice"),
+  close: getElement<HTMLButtonElement>("settings-close"),
+  store: settingsStore,
+  listVoices: () =>
+    typeof speechSynthesis !== "undefined" ? speechSynthesis.getVoices() : [],
+});
+if (typeof speechSynthesis !== "undefined") {
+  speechSynthesis.addEventListener?.("voiceschanged", () => settingsModal.refreshVoices());
+}
+
 window.addEventListener("resize", () => {
   projection.resize(canvas.clientWidth, canvas.clientHeight);
 });
@@ -109,5 +130,27 @@ startLoop({
   },
 });
 
-(window as unknown as { world: World; appState: typeof appState }).world = world;
-(window as unknown as { world: World; appState: typeof appState }).appState = appState;
+(window as unknown as {
+  world: World;
+  appState: typeof appState;
+  settingsStore: SettingsStore;
+  settingsModal: SettingsModal;
+}).world = world;
+(window as unknown as {
+  world: World;
+  appState: typeof appState;
+  settingsStore: SettingsStore;
+  settingsModal: SettingsModal;
+}).appState = appState;
+(window as unknown as {
+  world: World;
+  appState: typeof appState;
+  settingsStore: SettingsStore;
+  settingsModal: SettingsModal;
+}).settingsStore = settingsStore;
+(window as unknown as {
+  world: World;
+  appState: typeof appState;
+  settingsStore: SettingsStore;
+  settingsModal: SettingsModal;
+}).settingsModal = settingsModal;
