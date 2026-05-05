@@ -25,3 +25,39 @@ describe("integrateHeading", () => {
     expect(integrateHeading(123, 123, 5)).toBe(123);
   });
 });
+
+import {
+  integrateAltitude,
+  integrateSpeed,
+  VERTICAL_RATE_FPS,
+  ACCEL_KTS_PER_SEC,
+} from "../../src/sim/physics.ts";
+
+describe("integrateAltitude", () => {
+  it("descends at the configured rate", () => {
+    expect(integrateAltitude(10000, 5000, 1)).toBe(10000 - VERTICAL_RATE_FPS);
+    expect(integrateAltitude(10000, 5000, 10)).toBe(10000 - VERTICAL_RATE_FPS * 10);
+  });
+  it("climbs at the configured rate", () => {
+    expect(integrateAltitude(5000, 10000, 1)).toBe(5000 + VERTICAL_RATE_FPS);
+  });
+  it("snaps to target when within one tick of it", () => {
+    expect(integrateAltitude(10000, 9999, 1)).toBe(9999);
+    expect(integrateAltitude(10000, 10001, 1)).toBe(10001);
+  });
+  it("returns current if delta is zero", () => {
+    expect(integrateAltitude(8000, 8000, 1)).toBe(8000);
+  });
+});
+
+describe("integrateSpeed", () => {
+  it("decelerates at 1 kt/sec", () => {
+    expect(integrateSpeed(250, 200, 1)).toBe(250 - ACCEL_KTS_PER_SEC);
+  });
+  it("accelerates at 1 kt/sec", () => {
+    expect(integrateSpeed(200, 250, 1)).toBe(200 + ACCEL_KTS_PER_SEC);
+  });
+  it("snaps to target when within one tick", () => {
+    expect(integrateSpeed(250, 249.5, 1)).toBe(249.5);
+  });
+});
