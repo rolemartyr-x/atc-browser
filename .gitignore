@@ -9,8 +9,9 @@ coverage/
 # Brainstorming session state (per-user, ephemeral)
 .superpowers/
 
-# Per-user Claude Code settings
+# Per-user Claude Code settings + worktrees
 .claude/settings.local.json
+.claude/worktrees/
 
 # Editor / OS
 .vscode/
