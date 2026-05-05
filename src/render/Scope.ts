@@ -1,6 +1,7 @@
 import type { World } from "../sim/World";
 import type { Airspace, Runway, Aircraft, Point2D } from "../sim/types";
 import { degToRad } from "../sim/math";
+import { findConflicts } from "../sim/conflicts";
 import { COLORS, FONTS, LINES } from "./theme";
 import type { Projection } from "./projection";
 
@@ -30,6 +31,7 @@ export class Scope {
     this.updateTrails(world.elapsed_sec, world.aircraft);
     this.drawTrails(ctx);
     this.drawAircraft(ctx, world.aircraft, selectedId);
+    this.drawConflicts(ctx, world.aircraft);
   }
 
   private syncCanvasSize(ctx: CanvasRenderingContext2D): void {
@@ -189,11 +191,37 @@ export class Scope {
       const isCleared = ac.state === "cleared_approach";
       const color = isSelected || isCleared ? COLORS.scopeBright : COLORS.scope;
 
-      // Blip: 4x4 px square, centered on the position.
+      // Selection halo
+      if (isSelected) {
+        ctx.strokeStyle = COLORS.scopeBright;
+        ctx.lineWidth = LINES.selectionHalo;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Blip
       ctx.fillStyle = color;
       ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
 
-      // Datablock: callsign on line 1; "<altitude_hundreds> <speed>" on line 2.
+      // Target-heading vector when selected
+      if (isSelected && ac.target_heading != null) {
+        ctx.save();
+        ctx.strokeStyle = COLORS.scopeBright;
+        ctx.lineWidth = LINES.targetVector;
+        ctx.setLineDash([3, 2]);
+        const rad = degToRad(ac.target_heading);
+        const dx = Math.sin(rad);
+        const dy = -Math.cos(rad);   // y flipped: north = -y on screen
+        const len = 40;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + dx * len, p.y + dy * len);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Datablock
       const altHundreds = Math.round(ac.altitude_ft / 100).toString().padStart(3, "0");
       const speed = Math.round(ac.speed_kts).toString();
       const line1 = `${isCleared ? "*" : ""}${ac.callsign}`;
@@ -205,12 +233,36 @@ export class Scope {
       ctx.fillText(line1, p.x + dx, p.y + dy);
       ctx.fillText(line2, p.x + dx, p.y + dy + 12);
 
-      // Leader line from blip toward the datablock.
       ctx.strokeStyle = color;
       ctx.lineWidth = 0.5;
       ctx.beginPath();
       ctx.moveTo(p.x + 2, p.y);
       ctx.lineTo(p.x + dx - 1, p.y + dy - 4);
+      ctx.stroke();
+    }
+  }
+
+  private drawConflicts(ctx: CanvasRenderingContext2D, aircraft: Aircraft[]): void {
+    const pairs = findConflicts(aircraft);
+    if (pairs.length === 0) return;
+    const byId = new Map<string, Aircraft>();
+    for (const ac of aircraft) byId.set(ac.id, ac);
+
+    // Flash on/off at 2 Hz based on render time.
+    const flash = Math.floor(performance.now() / 250) % 2 === 0;
+    if (!flash) return;
+
+    ctx.strokeStyle = COLORS.conflict;
+    ctx.lineWidth = LINES.conflict;
+    for (const [a, b] of pairs) {
+      const acA = byId.get(a);
+      const acB = byId.get(b);
+      if (!acA || !acB) continue;
+      const pA = this.projection.toScreen(acA.position_nm);
+      const pB = this.projection.toScreen(acB.position_nm);
+      ctx.beginPath();
+      ctx.moveTo(pA.x, pA.y);
+      ctx.lineTo(pB.x, pB.y);
       ctx.stroke();
     }
   }
