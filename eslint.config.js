@@ -1,29 +1,24 @@
-import tsParser from "@typescript-eslint/parser";
-import tsPlugin from "@typescript-eslint/eslint-plugin";
+import js from "@eslint/js";
+import tseslint from "typescript-eslint";
 import prettierConfig from "eslint-config-prettier";
 
-export default [
+export default tseslint.config(
   {
-    ignores: ["dist/**", "node_modules/**", "coverage/**", ".superpowers/**"],
+    ignores: ["dist", "node_modules", "coverage", ".superpowers"],
   },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  prettierConfig,
   {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {
-      parser: tsParser,
       parserOptions: {
-        ecmaVersion: 2022,
         sourceType: "module",
       },
     },
-    plugins: {
-      "@typescript-eslint": tsPlugin,
-    },
     rules: {
-      ...tsPlugin.configs["eslint-recommended"].rules,
-      ...tsPlugin.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/consistent-type-imports": "error",
     },
   },
-  prettierConfig,
-];
+);
