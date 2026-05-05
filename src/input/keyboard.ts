@@ -116,3 +116,35 @@ export class CommandLineController {
     }
   }
 }
+
+export type HotkeyVerb = "H" | "A" | "S" | "L" | "X";
+const HOTKEY_KEYS: Record<string, HotkeyVerb> = {
+  h: "H",
+  a: "A",
+  s: "S",
+  l: "L",
+  x: "X",
+};
+
+export interface HotkeyOptions {
+  input: HTMLInputElement;
+  controller: CommandLineController;
+  getSelected: () => { id: string; callsign: string } | null;
+}
+
+export class HotkeyHandler {
+  constructor(private opts: HotkeyOptions) {
+    document.addEventListener("keydown", (e) => this.handleKey(e), true);
+  }
+
+  private handleKey(e: KeyboardEvent): void {
+    if (document.activeElement === this.opts.input) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const verb = HOTKEY_KEYS[e.key.toLowerCase()];
+    if (!verb) return;
+    const selected = this.opts.getSelected();
+    if (!selected) return;
+    e.preventDefault();
+    this.opts.controller.prefill(`${selected.callsign} ${verb} `);
+  }
+}

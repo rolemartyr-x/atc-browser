@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import { CommandLineController, completeCallsign, navigateHistory } from "../../src/input/keyboard";
+import { HotkeyHandler } from "../../src/input/keyboard";
 
 describe("completeCallsign", () => {
   it("returns the unique match for a prefix", () => {
@@ -81,5 +82,67 @@ describe("CommandLineController", () => {
     expect(input.value).toBe("UAL237 A 80");
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
     expect(input.value).toBe("DAL891 H 240");
+  });
+});
+
+describe("HotkeyHandler", () => {
+  function setup() {
+    document.body.innerHTML = `<input id="cmd-input" /><div id="other"></div>`;
+    const input = document.getElementById("cmd-input") as HTMLInputElement;
+    let selected: { id: string; callsign: string } | null = null;
+    const ctrl = new CommandLineController(input, {
+      onSubmit: () => {},
+      callsigns: () => [],
+    });
+    const hotkeys = new HotkeyHandler({
+      input,
+      controller: ctrl,
+      getSelected: () => selected,
+    });
+    return {
+      input,
+      hotkeys,
+      select(id: string, callsign: string) {
+        selected = { id, callsign };
+      },
+      clear() {
+        selected = null;
+      },
+    };
+  }
+
+  it("prefills the command line when H is pressed with an aircraft selected", () => {
+    const t = setup();
+    t.select("ac1", "DAL891");
+    document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "h", bubbles: true }));
+    expect(t.input.value).toBe("DAL891 H ");
+    expect(document.activeElement).toBe(t.input);
+  });
+
+  it("supports A, S, L, X verbs", () => {
+    const t = setup();
+    t.select("ac1", "DAL891");
+    for (const verb of ["a", "s", "l", "x"]) {
+      t.input.blur();
+      t.input.value = "";
+      document.body.dispatchEvent(new KeyboardEvent("keydown", { key: verb, bubbles: true }));
+      expect(t.input.value).toBe(`DAL891 ${verb.toUpperCase()} `);
+    }
+  });
+
+  it("does nothing when no aircraft is selected", () => {
+    const t = setup();
+    document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "h", bubbles: true }));
+    expect(t.input.value).toBe("");
+  });
+
+  it("does not hijack typing when the command line is already focused", () => {
+    const t = setup();
+    t.select("ac1", "DAL891");
+    t.input.focus();
+    t.input.value = "DAL891 H 24";
+    // Simulate typing "0"
+    t.input.dispatchEvent(new KeyboardEvent("keydown", { key: "0", bubbles: true }));
+    expect(t.input.value).toBe("DAL891 H 24");   // Hotkey did NOT replace it
   });
 });
