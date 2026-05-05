@@ -3,7 +3,18 @@ import type { Projection } from "../render/projection";
 import type { World } from "../sim/World";
 import type { Aircraft } from "../sim/types";
 
-const VERBS: HotkeyVerb[] = ["H", "A", "S", "L", "X"];
+interface VerbDef {
+  verb: HotkeyVerb;
+  label: string;
+}
+
+const VERBS: VerbDef[] = [
+  { verb: "H", label: "Heading (h)" },
+  { verb: "A", label: "Altitude (a)" },
+  { verb: "S", label: "Speed (s)" },
+  { verb: "L", label: "Cleared ILS (l)" },
+  { verb: "X", label: "Handoff (x)" },
+];
 
 export interface ClickMenuOptions {
   menuEl: HTMLElement;
@@ -19,10 +30,10 @@ export class ClickMenu {
 
   constructor(private opts: ClickMenuOptions) {
     opts.menuEl.replaceChildren();
-    for (const verb of VERBS) {
+    for (const { verb, label } of VERBS) {
       const btn = document.createElement("button");
       btn.className = "click-menu-item";
-      btn.textContent = verb;
+      btn.textContent = label;
       btn.dataset.verb = verb;
       btn.addEventListener("click", () => this.handleVerb(verb));
       opts.menuEl.appendChild(btn);
