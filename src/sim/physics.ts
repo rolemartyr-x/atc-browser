@@ -1,4 +1,5 @@
-import { headingDelta, normalizeHeading } from "./math.ts";
+import { headingDelta, normalizeHeading, degToRad } from "./math.ts";
+import type { Aircraft, Point2D } from "./types.ts";
 
 export const TURN_RATE_DEG_PER_SEC = 3;
 
@@ -31,4 +32,33 @@ export function integrateSpeed(current: number, target: number, dt: number): num
   const maxChange = ACCEL_KTS_PER_SEC * dt;
   if (Math.abs(delta) <= maxChange) return target;
   return current + Math.sign(delta) * maxChange;
+}
+
+const SECONDS_PER_HOUR = 3600;
+
+export function integratePosition(
+  pos: Point2D,
+  heading_deg: number,
+  speed_kts: number,
+  dt: number,
+): Point2D {
+  const distNm = (speed_kts / SECONDS_PER_HOUR) * dt;
+  const rad = degToRad(heading_deg);
+  return {
+    x: pos.x + distNm * Math.sin(rad),
+    y: pos.y + distNm * Math.cos(rad),
+  };
+}
+
+export function tickAircraft(ac: Aircraft, dt: number): void {
+  if (ac.target_heading != null) {
+    ac.heading_deg = integrateHeading(ac.heading_deg, ac.target_heading, dt);
+  }
+  if (ac.target_altitude != null) {
+    ac.altitude_ft = integrateAltitude(ac.altitude_ft, ac.target_altitude, dt);
+  }
+  if (ac.target_speed != null) {
+    ac.speed_kts = integrateSpeed(ac.speed_kts, ac.target_speed, dt);
+  }
+  ac.position_nm = integratePosition(ac.position_nm, ac.heading_deg, ac.speed_kts, dt);
 }
