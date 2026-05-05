@@ -5,6 +5,18 @@ import { World } from "../../src/sim/World";
 import { KDLH } from "../../src/data/airports/kdlh";
 import { createArrival } from "../../src/sim/Aircraft";
 import { createAppState } from "../../src/app/state";
+import { SettingsStore } from "../../src/app/settings";
+import type { StorageAdapter } from "../../src/storage/Storage";
+
+class MemoryAdapter implements StorageAdapter {
+  private map = new Map<string, string>();
+  getItem(key: string): string | null {
+    return this.map.get(key) ?? null;
+  }
+  setItem(key: string, value: string): void {
+    this.map.set(key, value);
+  }
+}
 
 describe("CommandPipeline", () => {
   let world: World;
@@ -24,7 +36,7 @@ describe("CommandPipeline", () => {
         spawn_time_s: 0,
       }),
     );
-    state = createAppState();
+    state = createAppState(new SettingsStore(new MemoryAdapter()));
     pipeline = new CommandPipeline({ world, state });
   });
 

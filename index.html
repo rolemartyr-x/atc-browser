@@ -15,6 +15,7 @@
           <span><span class="hud-label">SCORE</span> <span id="hud-score">0</span></span>
           <span><span class="hud-label">CONFLICTS</span> <span id="hud-conflicts">0</span></span>
           <span><span class="hud-label">STATUS</span> <span id="hud-status">running</span></span>
+          <button id="settings-toggle" type="button" aria-label="Settings" title="Settings">⚙</button>
         </div>
       </header>
       <canvas id="scope"></canvas>
@@ -27,6 +28,31 @@
         </div>
       </footer>
       <div id="click-menu" hidden></div>
+      <div id="settings-modal" hidden role="dialog" aria-labelledby="settings-title">
+        <div class="modal-card">
+          <h2 id="settings-title">Settings</h2>
+          <label class="setting-row">
+            <input id="setting-sfx" type="checkbox" />
+            <span>Sound effects</span>
+          </label>
+          <label class="setting-row">
+            <input id="setting-tts" type="checkbox" />
+            <span>Voice readbacks (TTS)</span>
+          </label>
+          <label class="setting-row">
+            <span>Volume</span>
+            <input id="setting-volume" type="range" min="0" max="100" />
+            <span id="setting-volume-display" class="volume-display">80%</span>
+          </label>
+          <label class="setting-row">
+            <span>Voice</span>
+            <select id="setting-voice"></select>
+          </label>
+          <div class="modal-actions">
+            <button id="settings-close" type="button">Close</button>
+          </div>
+        </div>
+      </div>
     </div>
     <script type="module" src="/src/app/main.ts"></script>
   </body>
