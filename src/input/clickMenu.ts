@@ -13,6 +13,10 @@ export interface ClickMenuOptions {
 }
 
 export class ClickMenu {
+  // Time of the last showFor() call; used to ignore the dismiss event that
+  // bubbles from the same click that opened the menu.
+  private shownAt = 0;
+
   constructor(private opts: ClickMenuOptions) {
     opts.menuEl.replaceChildren();
     for (const verb of VERBS) {
@@ -39,6 +43,7 @@ export class ClickMenu {
     el.style.top = `${screen.y + 12}px`;
     el.dataset.aircraftId = aircraftId;
     el.dataset.callsign = ac.callsign;
+    this.shownAt = performance.now();
   }
 
   hide(): void {
@@ -57,6 +62,9 @@ export class ClickMenu {
   private maybeDismiss(e: MouseEvent): void {
     const el = this.opts.menuEl;
     if (el.hidden) return;
+    // The click that opened the menu bubbles up to document immediately after.
+    // Ignore dismiss events fired within 100ms of the most recent showFor.
+    if (performance.now() - this.shownAt < 100) return;
     const target = e.target as Node | null;
     if (target && el.contains(target)) return;   // click inside the menu
     // Click was outside; the controller decides whether to re-show on a new selection.

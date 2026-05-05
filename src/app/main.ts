@@ -36,7 +36,11 @@ world.startTraffic({
 });
 
 const appState = createAppState();
-const projection = new Projection(canvas.clientWidth, canvas.clientHeight, KDLH.sector_radius_nm);
+// Add ~15% margin around the sector boundary so the scope doesn't fill the
+// canvas edge-to-edge. Aircraft outside the sector still render (briefly,
+// before they exit and the session ends).
+const SCOPE_RANGE_NM = KDLH.sector_radius_nm * 1.15;
+const projection = new Projection(canvas.clientWidth, canvas.clientHeight, SCOPE_RANGE_NM);
 const scope = new Scope(canvas, projection);
 const strips = new Strips(stripsEl, (id) => {
   appState.selectedAircraftId = id;
