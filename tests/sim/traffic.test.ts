@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { TrafficGenerator } from "../../src/sim/traffic";
+import { createArrival } from "../../src/sim/Aircraft";
 import type { Airspace } from "../../src/sim/types";
 
 const airspace: Airspace = {
@@ -68,5 +69,58 @@ describe("TrafficGenerator", () => {
     gen.tick(60);    // first spawn at t=60
     const ac1 = gen.tick(60);  // would be at t=120 but tick increments by 60
     expect(ac1?.position_nm).toEqual({ x: 20, y: 20 }); // FIXA
+  });
+
+  it("skips a fix that already has an aircraft within SAFE_SPAWN_RADIUS_NM", () => {
+    let counter = 0;
+    const gen = new TrafficGenerator(airspace, {
+      initialIntervalSec: 60,
+      minIntervalSec: 60,
+      rampDurationSec: 600,
+      rng: () => 0,                     // always picks fixes[0] when available
+      idGen: () => `id${++counter}`,
+    });
+
+    // First spawn at FIXA (20, 20).
+    const ac1 = gen.tick(60);
+    expect(ac1?.position_nm).toEqual({ x: 20, y: 20 });
+
+    // Pretend the first aircraft is still at FIXA (within SAFE_SPAWN_RADIUS_NM).
+    // The second spawn must avoid FIXA and pick the only other fix (FIXB).
+    const ac2 = gen.tick(60, [ac1!]);
+    expect(ac2?.position_nm).toEqual({ x: -20, y: -20 });
+  });
+
+  it("defers the next spawn when all entry fixes are occupied", () => {
+    let counter = 0;
+    const gen = new TrafficGenerator(airspace, {
+      initialIntervalSec: 60,
+      minIntervalSec: 60,
+      rampDurationSec: 600,
+      rng: () => 0,
+      idGen: () => `id${++counter}`,
+    });
+
+    // Build a fake aircraft list with one near each fix to occupy both.
+    const ac1 = createArrival({
+      id: "occA",
+      callsign: "OCCA",
+      position_nm: { x: 20, y: 20 },
+      heading_deg: 225,
+      altitude_ft: 11000,
+      speed_kts: 250,
+      spawn_time_s: 0,
+    });
+    const ac2 = createArrival({
+      id: "occB",
+      callsign: "OCCB",
+      position_nm: { x: -20, y: -20 },
+      heading_deg: 45,
+      altitude_ft: 11000,
+      speed_kts: 250,
+      spawn_time_s: 0,
+    });
+
+    expect(gen.tick(60, [ac1, ac2])).toBeNull();
   });
 });

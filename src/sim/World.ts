@@ -93,7 +93,7 @@ export class World {
 
     // 2.5 spawn
     if (this.traffic) {
-      const spawned = this.traffic.tick(dt);
+      const spawned = this.traffic.tick(dt, this.aircraft);
       if (spawned) {
         this.aircraft.push(spawned);
         this.events.emit({ kind: "aircraft_spawned", aircraft_id: spawned.id });
