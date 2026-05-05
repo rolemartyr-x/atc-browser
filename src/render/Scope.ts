@@ -1,13 +1,17 @@
 import type { World } from "../sim/World";
-import type { Airspace, Runway, Aircraft } from "../sim/types";
+import type { Airspace, Runway, Aircraft, Point2D } from "../sim/types";
 import { degToRad } from "../sim/math";
 import { COLORS, FONTS, LINES } from "./theme";
 import type { Projection } from "./projection";
 
 const RANGE_RING_INTERVAL_NM = 10;
 const ILS_CENTERLINE_LENGTH_NM = 12;
+const TRAIL_SAMPLE_INTERVAL_S = 1;
+const TRAIL_MAX_AGE_S = 30;
 
 export class Scope {
+  private trails = new Map<string, Array<{ pos: Point2D; t: number }>>();
+
   constructor(
     private canvas: HTMLCanvasElement,
     private projection: Projection,
@@ -23,6 +27,8 @@ export class Scope {
     this.drawRangeRings(ctx, world.airspace);
     this.drawRunways(ctx, world.airspace);
     this.drawFixes(ctx, world.airspace);
+    this.updateTrails(world.elapsed_sec, world.aircraft);
+    this.drawTrails(ctx);
     this.drawAircraft(ctx, world.aircraft, selectedId);
   }
 
@@ -129,6 +135,46 @@ export class Scope {
       ctx.stroke();
       ctx.fillText(fix.name, p.x + 7, p.y + 4);
     }
+  }
+
+  private updateTrails(elapsedSec: number, aircraft: Aircraft[]): void {
+    const liveIds = new Set<string>();
+    for (const ac of aircraft) {
+      liveIds.add(ac.id);
+      let trail = this.trails.get(ac.id);
+      if (!trail) {
+        trail = [];
+        this.trails.set(ac.id, trail);
+      }
+      const last = trail[trail.length - 1];
+      if (!last || elapsedSec - last.t >= TRAIL_SAMPLE_INTERVAL_S) {
+        trail.push({ pos: { ...ac.position_nm }, t: elapsedSec });
+      }
+      while (trail.length > 0 && elapsedSec - trail[0]!.t > TRAIL_MAX_AGE_S) {
+        trail.shift();
+      }
+    }
+    // Drop trails for aircraft no longer present.
+    for (const id of [...this.trails.keys()]) {
+      if (!liveIds.has(id)) this.trails.delete(id);
+    }
+  }
+
+  private drawTrails(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = COLORS.scope;
+    for (const trail of this.trails.values()) {
+      // Newest sample is at the end; oldest at the start.
+      const n = trail.length;
+      for (let i = 0; i < n; i++) {
+        const { pos } = trail[i]!;
+        const age = (n - 1 - i) / Math.max(1, n - 1);   // 0 = newest, 1 = oldest
+        const alpha = 1 - age;
+        ctx.globalAlpha = Math.max(0.05, alpha * 0.6);
+        const sp = this.projection.toScreen(pos);
+        ctx.fillRect(sp.x - 0.5, sp.y - 0.5, 1, 1);
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   private drawAircraft(
