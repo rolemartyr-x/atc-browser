@@ -17,6 +17,7 @@ import { Sfx } from "../audio/Sfx";
 import { bindSfxToWorld } from "../audio/sfxBindings";
 import { Tts } from "../audio/Tts";
 import { bindTtsToWorld } from "../audio/ttsBindings";
+import { GameOverScreen } from "../render/GameOverScreen";
 
 function getElement<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -122,6 +123,34 @@ const settingsModal = new SettingsModal({
 if (typeof speechSynthesis !== "undefined") {
   speechSynthesis.addEventListener?.("voiceschanged", () => settingsModal.refreshVoices());
 }
+
+const gameOver = new GameOverScreen({
+  root: getElement("game-over"),
+  reason: getElement("game-over-reason"),
+  score: getElement("game-over-score"),
+  duration: getElement("game-over-duration"),
+  highScores: getElement<HTMLOListElement>("game-over-highscores"),
+  restart: getElement<HTMLButtonElement>("game-over-restart"),
+  onRestart: () => window.location.reload(),
+});
+
+world.events.on((e) => {
+  if (e.kind !== "session_ended") return;
+  const endedAt = new Date().toISOString();
+  const entry = {
+    score: world.session.score,
+    duration_sec: Math.floor(world.elapsed_sec),
+    ended_at: endedAt,
+  };
+  settingsStore.recordHighScore(world.airspace.icao, entry);
+  gameOver.show({
+    reason: world.session.end_reason ?? e.reason,
+    score: entry.score,
+    duration_sec: entry.duration_sec,
+    highScores: settingsStore.highScores(world.airspace.icao),
+    currentEndedAt: endedAt,
+  });
+});
 
 window.addEventListener("resize", () => {
   projection.resize(canvas.clientWidth, canvas.clientHeight);
