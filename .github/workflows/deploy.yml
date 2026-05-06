@@ -27,7 +27,8 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
 
-      # See ci.yml for the npm install / npm ci rationale (npm bug 4828).
+      # See ci.yml for the lockfile-drop rationale (npm bug 4828).
+      - run: rm -f package-lock.json
       - run: npm install
 
       - run: npm run typecheck

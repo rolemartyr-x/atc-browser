@@ -823,10 +823,10 @@ jobs:
         with:
           node-version-file: ".nvmrc"
           cache: "npm"
-      # `npm install` rather than `npm ci`: npm 10 strict-respects the
-      # lockfile and skips optional native deps not on the lockfile platform
-      # (npm bug 4828). vitest/rolldown ships native bindings as optional, so
-      # `npm ci` fails to install `@rolldown/binding-linux-x64-gnu` on Linux.
+      # npm bug 4828: lockfile was generated on Windows and lacks the Linux
+      # rolldown native binding that vitest 4 needs. Drop the lockfile and
+      # reinstall fresh so optional native deps resolve cleanly.
+      - run: rm -f package-lock.json
       - run: npm install
       - run: npm run typecheck
       - run: npm run lint
