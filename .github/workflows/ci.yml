@@ -17,7 +17,13 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
 
-      - run: npm ci
+      # Use `npm install` rather than `npm ci`: npm 10's `ci` strict-respects
+      # the lockfile and skips optional native deps that weren't resolved when
+      # the lockfile was generated (npm bug 4828). vitest 4 / rolldown ships
+      # platform-specific native bindings as optional deps, so `npm ci` fails
+      # to install `@rolldown/binding-linux-x64-gnu` here. `npm install`
+      # resolves and installs them at runtime.
+      - run: npm install
 
       - run: npm run typecheck
       - run: npm run lint
