@@ -17,7 +17,13 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
 
-      - run: npm ci
+      # npm bug 4828: the committed lockfile was generated on Windows and so
+      # doesn't include the Linux rolldown native binding that vitest 4 needs.
+      # `npm ci` AND `npm install` both honor the lockfile and fail. The fix
+      # the error message itself prescribes: drop the lockfile and reinstall
+      # fresh on this platform so the optional native deps resolve cleanly.
+      - run: rm -f package-lock.json
+      - run: npm install
 
       - run: npm run typecheck
       - run: npm run lint
