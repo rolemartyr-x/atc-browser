@@ -32,7 +32,14 @@ export class Sfx {
     private settings: SettingsStore,
     private factory: AudioContextFactory = () =>
       new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)(),
-  ) {}
+  ) {
+    settings.onChange((s) => {
+      if (this.master && this.ctx) {
+        const target = s.sfx_enabled ? s.volume : 0;
+        this.master.gain.setValueAtTime(target, this.ctx.currentTime);
+      }
+    });
+  }
 
   play(name: SfxName): void {
     if (!this.settings.settings.sfx_enabled) return;
