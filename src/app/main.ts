@@ -13,6 +13,8 @@ import { CommandPipeline } from "../input/commandPipeline";
 import { LocalStorageAdapter } from "../storage/Storage";
 import { SettingsStore } from "./settings";
 import { SettingsModal } from "../render/SettingsModal";
+import { Sfx } from "../audio/Sfx";
+import { bindSfxToWorld } from "../audio/sfxBindings";
 
 function getElement<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -40,6 +42,8 @@ world.startTraffic({
 
 const settingsStore = new SettingsStore(new LocalStorageAdapter());
 const appState = createAppState(settingsStore);
+const sfx = new Sfx(settingsStore);
+bindSfxToWorld(world, sfx);
 // Add ~15% margin around the sector boundary so the scope doesn't fill the
 // canvas edge-to-edge. Aircraft outside the sector still render (briefly,
 // before they exit and the session ends).
@@ -47,6 +51,7 @@ const SCOPE_RANGE_NM = KDLH.sector_radius_nm * 1.15;
 const projection = new Projection(canvas.clientWidth, canvas.clientHeight, SCOPE_RANGE_NM);
 const scope = new Scope(canvas, projection);
 const strips = new Strips(stripsEl, (id) => {
+  if (id !== appState.selectedAircraftId && id !== null) sfx.play("select");
   appState.selectedAircraftId = id;
   if (id) clickMenu.showFor(id);
   else clickMenu.hide();
@@ -90,6 +95,7 @@ new MouseInput({
   projection,
   world: () => world,
   onSelect: (id) => {
+    if (id !== appState.selectedAircraftId && id !== null) sfx.play("select");
     appState.selectedAircraftId = id;
     if (id) clickMenu.showFor(id);
     else clickMenu.hide();
