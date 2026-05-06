@@ -53,6 +53,27 @@
           </div>
         </div>
       </div>
+      <div id="game-over" hidden role="dialog" aria-labelledby="game-over-title">
+        <div class="modal-card">
+          <h2 id="game-over-title">Game Over</h2>
+          <div id="game-over-reason" class="game-over-reason"></div>
+          <div class="score-summary">
+            <div class="score-row">
+              <span class="hud-label">FINAL SCORE</span>
+              <span id="game-over-score" class="score-value">0</span>
+            </div>
+            <div class="score-row">
+              <span class="hud-label">DURATION</span>
+              <span id="game-over-duration" class="score-value">0:00</span>
+            </div>
+          </div>
+          <h3 class="high-score-title">High Scores</h3>
+          <ol id="game-over-highscores" class="high-score-list"></ol>
+          <div class="modal-actions">
+            <button id="game-over-restart" type="button">Play Again</button>
+          </div>
+        </div>
+      </div>
     </div>
     <script type="module" src="/src/app/main.ts"></script>
   </body>
