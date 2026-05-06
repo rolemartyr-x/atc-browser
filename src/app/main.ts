@@ -15,6 +15,8 @@ import { SettingsStore } from "./settings";
 import { SettingsModal } from "../render/SettingsModal";
 import { Sfx } from "../audio/Sfx";
 import { bindSfxToWorld } from "../audio/sfxBindings";
+import { Tts } from "../audio/Tts";
+import { bindTtsToWorld } from "../audio/ttsBindings";
 
 function getElement<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -44,6 +46,8 @@ const settingsStore = new SettingsStore(new LocalStorageAdapter());
 const appState = createAppState(settingsStore);
 const sfx = new Sfx(settingsStore);
 bindSfxToWorld(world, sfx);
+const tts = new Tts(settingsStore);
+bindTtsToWorld(world, tts);
 // Add ~15% margin around the sector boundary so the scope doesn't fill the
 // canvas edge-to-edge. Aircraft outside the sector still render (briefly,
 // before they exit and the session ends).
